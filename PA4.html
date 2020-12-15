@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<head>
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Lab4</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            display: block;
+        }
+	</style>
+	<script src='three.js'></script>
+	<script src="threex-artoolkitsource.js"></script>
+	<script src="threex-artoolkitcontext.js"></script>
+	<script src="threex-arbasecontrols.js"></script>
+    <script src="threex-armarkercontrols.js"></script>
+	<script src="artoolkit.min.js"></script>
+	<script src="artoolkit.api.js"></script>
+</head>
+
+<body>
+
+
+<script>
+
+const rotationSpeed = 0.01;
+const dingDongSlices = 40;
+const dingDongStacks = 40;
+const distancing = 3;
+var dingDong;
+var dingDong2;
+
+
+var scene, camera, renderer;
+
+var arToolkitSource, arToolkitContext;
+
+var markerRoot1, markerRoot2;
+
+initialize();
+animate();
+
+function initialize()
+{
+	scene = new THREE.Scene();
+
+	let ambientLight = new THREE.AmbientLight( 0xcccccc, 0.5 );
+	scene.add( ambientLight );
+				
+	camera = new THREE.Camera();
+	scene.add(camera);
+
+	renderer = new THREE.WebGLRenderer({
+		antialias : true,
+		alpha: true
+	});
+	renderer.setClearColor(new THREE.Color('lightgrey'), 0)
+	renderer.setSize( 1920,1080 );
+	renderer.domElement.style.position = 'absolute'
+	renderer.domElement.style.top = '0px'
+	renderer.domElement.style.left = '0px'
+	document.body.appendChild( renderer.domElement );
+
+	arToolkitSource = new THREEx.ArToolkitSource({
+		sourceType : 'webcam',
+	});
+
+	function onResize()
+	{
+		arToolkitSource.onResize()	
+		arToolkitSource.copySizeTo(renderer.domElement)	
+		if ( arToolkitContext.arController !== null )
+		{
+			arToolkitSource.copySizeTo(arToolkitContext.arController.canvas)	
+		}	
+	}
+
+	arToolkitSource.init(function onReady(){
+		onResize()
+	});
+	
+	window.addEventListener('resize', function(){
+		onResize()
+	});
+	
+
+	arToolkitContext = new THREEx.ArToolkitContext({
+		cameraParametersUrl: 'camera_para.dat',
+		detectionMode: 'mono'
+	});
+	
+
+	arToolkitContext.init( function onCompleted(){
+		camera.projectionMatrix.copy( arToolkitContext.getProjectionMatrix() );
+	});
+
+
+	markerRoot1 = new THREE.Group();
+	scene.add(markerRoot1);
+	let markerControls1 = new THREEx.ArMarkerControls(arToolkitContext, markerRoot1, {
+		type: 'pattern', patternUrl: "pattern-203.patt",
+	})
+
+	
+	    const a = 1.5;
+        const b = 3;
+        const c = 2;
+        const d = 2;
+        var virich = function (t, v, vector) {
+            //
+            let grad1 = t * 2 * Math.PI;
+            let grad2 = v * 2 * Math.PI;
+            let f = (a * b) / Math.sqrt(((a ** 2) * (Math.sin(grad2)) ** 2) + ((b ** 2) * (Math.cos(grad2) ** 2)));
+
+            vector.x = (Math.cos(grad2) / 2) * ((f * (1 + Math.cos(grad1))) + ((d ** 2 - c ** 2) * ((1 - Math.cos(grad1)) / f)));
+            vector.y = (Math.sin(grad2) / 2) * ((f * (1 + Math.cos(grad1))) + ((d ** 2 - c ** 2) * ((1 - Math.cos(grad1)) / f)));
+            vector.z = (Math.sin(grad1) / 2) * (f - ((d ** 2 - c ** 2) / f));
+
+        };
+
+		const geometry = new THREE.ParametricGeometry(virich, 50, 50);
+
+
+
+        const material = new THREE.MeshBasicMaterial({
+            color: 0xFFFffF,
+            side: THREE.DoubleSide,
+            wireframe: true
+            // filled: true
+        });
+
+        surface = new THREE.Mesh(geometry, material);
+
+
+	markerRoot1.add( surface );
+
+}
+
+
+function update()
+{
+
+	if ( arToolkitSource.ready !== false )
+		arToolkitContext.update( arToolkitSource.domElement );
+}
+
+
+function render()
+{
+	renderer.render( scene, camera );
+}
+
+
+function animate()
+{
+	requestAnimationFrame(animate);
+	camera.position.x += 0.001;
+    camera.position.y += 0.001;
+    camera.position.z += 0.001;
+	update();
+	render();
+}
+
+</script>
+</body>
+</html>
